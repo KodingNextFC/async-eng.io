@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Asynchronous Functions in JavaScript</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800;900&family=Source+Code+Pro:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFFFFF;
+    --ink:#26313F;
+    --sub:#6B7684;
+    --blue:#2F7BD9;
+    --blue-light:#EAF3FD;
+    --blue-dark:#1F5FB0;
+    --orange:#F2994A;
+    --orange-light:#FEF3E8;
+    --code-bg:#1E2733;
+    --code-ink:#E6EDF5;
+    --line:#E4E9F0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Nunito',sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.6;
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+  }
+  #app{
+    position:relative;
+    max-width:760px;
+    margin:0 auto;
+    height:100%;
+    overflow:hidden;
+  }
+
+  #dots{
+    position:absolute;
+    top:16px;
+    left:0;right:0;
+    display:flex;
+    justify-content:center;
+    gap:8px;
+    z-index:30;
+  }
+  .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--line);
+    transition:all .3s ease;
+  }
+  .dot.active{ width:22px; border-radius:5px; background:var(--blue); }
+  .dot.done{ background:#B7CFEC; }
+
+  .page{
+    position:absolute;
+    top:0;left:0;right:0;bottom:0;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    padding:60px 26px 96px 26px;
+    visibility:hidden;
+    opacity:0;
+    transform:translateX(24px);
+    transition:opacity .4s ease, transform .4s ease;
+    overflow-y:auto;
+  }
+  .page.active{
+    visibility:visible;
+    opacity:1;
+    transform:translateX(0);
+    z-index:5;
+  }
+
+  h2{
+    font-family:'Baloo 2',cursive;
+    font-size:21px;
+    margin:0 0 12px 0;
+    color:var(--ink);
+  }
+  p{
+    font-size:15px;
+    color:var(--ink);
+    margin:0 0 14px 0;
+  }
+
+  /* ---------- opening question ---------- */
+  .question-kicker{
+    font-family:'Baloo 2',cursive;
+    font-size:12px;
+    letter-spacing:2px;
+    color:var(--blue);
+    text-transform:uppercase;
+    text-align:center;
+    margin-bottom:14px;
+  }
+  .question-text{
+    font-family:'Baloo 2',cursive;
+    font-size:25px;
+    line-height:1.4;
+    text-align:center;
+    color:var(--ink);
+    max-width:520px;
+    margin:0 auto 14px auto;
+  }
+  .question-sub{
+    font-size:14.5px;
+    color:var(--sub);
+    text-align:center;
+    font-weight:700;
+  }
+
+  code.inline{
+    font-family:'Source Code Pro',monospace;
+    background:var(--blue-light);
+    color:var(--blue-dark);
+    padding:2px 6px;
+    border-radius:5px;
+    font-size:13.5px;
+  }
+  mark{
+    background:var(--blue-light);
+    color:var(--blue-dark);
+    padding:1px 6px;
+    border-radius:5px;
+    font-weight:800;
+  }
+
+  .analogy-box{
+    background:var(--blue-light);
+    border-radius:14px;
+    padding:18px 20px;
+    display:flex;
+    gap:14px;
+    align-items:flex-start;
+    margin-top:10px;
+  }
+  .analogy-icon{
+    flex:0 0 auto;
+    width:38px;height:38px;
+    border-radius:10px;
+    background:var(--blue);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .analogy-text{ font-size:14px; color:var(--ink); }
+  .analogy-text b{ color:var(--blue-dark); }
+
+  .tip-box{
+    border:2px dashed var(--orange);
+    background:var(--orange-light);
+    border-radius:14px;
+    padding:16px 18px;
+    font-size:14px;
+    color:#7A4A16;
+    margin:16px 0 0 0;
+  }
+  .tip-box b{ color:#5C3710; }
+
+  .code-card{
+    background:var(--code-bg);
+    color:var(--code-ink);
+    border-radius:14px;
+    padding:16px 18px;
+    font-family:'Source Code Pro', monospace;
+    font-size:12.5px;
+    line-height:1.75;
+    overflow-x:auto;
+    margin:12px 0;
+  }
+  .code-card .kw{ color:#F2994A; }
+  .code-card .fn{ color:#7DC4FF; }
+  .code-card .str{ color:#9FE39F; }
+  .code-card .cm{ color:#7A8699; }
+
+  .step-list{
+    counter-reset: step;
+    list-style:none;
+    margin:14px 0 0 0;
+    padding:0;
+  }
+  .step-list li{
+    counter-increment: step;
+    position:relative;
+    padding-left:34px;
+    margin-bottom:10px;
+    font-size:13.5px;
+  }
+  .step-list li::before{
+    content: counter(step);
+    position:absolute;
+    left:0; top:0;
+    width:22px;height:22px;
+    border-radius:50%;
+    background:var(--blue);
+    color:#fff;
+    font-family:'Baloo 2',cursive;
+    font-size:12px;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .takeaway{
+    background:var(--ink);
+    color:#fff;
+    border-radius:16px;
+    padding:22px 22px;
+    text-align:center;
+  }
+  .takeaway .kicker2{
+    font-family:'Baloo 2',cursive;
+    font-size:12px;
+    letter-spacing:2px;
+    color:#9FC3F0;
+    text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .takeaway p{ color:#fff; font-size:15px; margin:0; }
+
+  /* ---------- centered nav controls ---------- */
+  #controls{
+    position:absolute;
+    bottom:20px;
+    left:0;right:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:18px;
+    z-index:30;
+  }
+  .navbtn{
+    width:48px;height:48px;
+    border-radius:50%;
+    background:#fff;
+    border:2px solid var(--line);
+    box-shadow:0 4px 12px rgba(38,49,63,0.12);
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  }
+  .navbtn:disabled{ opacity:.35; cursor:not-allowed; }
+  .navbtn.primary{
+    background:var(--blue);
+    border-color:var(--blue);
+  }
+
+  @media (max-width:520px){
+    .question-text{font-size:20px;}
+    .page{padding:56px 20px 90px 20px;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div id="dots">
+    <div class="dot" data-i="0"></div>
+    <div class="dot" data-i="1"></div>
+    <div class="dot" data-i="2"></div>
+    <div class="dot" data-i="3"></div>
+    <div class="dot" data-i="4"></div>
+  </div>
+
+  <!-- 1: OPENING QUESTION -->
+  <div class="page active" id="p0">
+    <div class="question-kicker">Let's Think About It</div>
+    <div class="question-text">How can a website avoid freezing while waiting for data from an API?</div>
+    <div class="question-sub">Swipe right to find out the answer.</div>
+  </div>
+
+  <!-- 2: WHAT IS IT -->
+  <div class="page" id="p1">
+    <h2>What Is an Asynchronous Function?</h2>
+    <p>Great question! We use <mark>asynchronous functions</mark>. This way, JavaScript doesn't freeze the web page while waiting for data &mdash; it keeps everything running smoothly.</p>
+    <p>JavaScript can only do <b>one thing at a time</b>. Without asynchronous functions, the entire page would "freeze" every time it waits for something slow, like fetching data from the internet.</p>
+    <div class="analogy-box">
+      <div class="analogy-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M4 10h16M8 10V4m8 6V4M6 10v10a2 2 0 002 2h8a2 2 0 002-2V10" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="analogy-text">Imagine you're ordering food at a restaurant. You don't stand there waiting for the chef to finish cooking &mdash; you sit down, chat, or check your phone. Once the food is ready, the waiter calls you over. <b>Asynchronous functions work the same way:</b> JavaScript keeps doing other things until the data is ready.</div>
+    </div>
+  </div>
+
+  <!-- 3: ASYNC AWAIT -->
+  <div class="page" id="p2">
+    <h2>Getting to Know <code class="inline">async</code> and <code class="inline">await</code></h2>
+    <p>The <b>async</b> keyword before a function marks it as running asynchronously. Inside it, we can use <b>await</b> to "wait" for the result of a process &mdash; without stopping the entire program.</p>
+    <div class="code-card">
+<span class="kw">async function</span> <span class="fn">fetchAirQuality</span>() {<br>
+&nbsp;&nbsp;<span class="cm">// wait for the server to respond</span><br>
+&nbsp;&nbsp;<span class="kw">const</span> response = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">"https://api.example.com/air-quality"</span>);<br>
+&nbsp;&nbsp;<span class="cm">// convert the response into usable data</span><br>
+&nbsp;&nbsp;<span class="kw">const</span> data = <span class="kw">await</span> response.<span class="fn">json</span>();<br>
+&nbsp;&nbsp;<span class="kw">return</span> data;<br>
+}
+    </div>
+    <ol class="step-list">
+      <li><code class="inline">async</code> marks this function as allowed to use <code class="inline">await</code> inside it.</li>
+      <li><code class="inline">await fetch(...)</code> waits for the server's response, without stopping the page.</li>
+      <li><code class="inline">await response.json()</code> converts the response into ready-to-use data.</li>
+      <li>The function returns <code class="inline">data</code> so it can be used elsewhere in our code.</li>
+    </ol>
+  </div>
+
+  <!-- 4: WHY IT MATTERS -->
+  <div class="page" id="p3">
+    <h2>Why Does This Matter?</h2>
+    <p>Without asynchronous functions, the "Check Air Quality" button would freeze the entire page until the data finishes loading from the server. With <b>async/await</b>, users can still scroll, click, and interact with the page while the data loads in the background.</p>
+    <div class="tip-box"><b>Tip:</b> The <code class="inline">fetchAirQuality()</code> function only runs when it's called &mdash; for example, when a user clicks the "Check Air Quality" button on our web page.</div>
+  </div>
+
+  <!-- 5: KEY TAKEAWAY -->
+  <div class="page" id="p4">
+    <div class="takeaway">
+      <div class="kicker2">Key Takeaway</div>
+      <p>Asynchronous functions help JavaScript handle long-running tasks &mdash; like fetching data from an API &mdash; without stopping the entire program.</p>
+    </div>
+  </div>
+
+  <div id="controls">
+    <button class="navbtn" id="prevBtn" aria-label="Previous">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8" stroke="#26313F" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button class="navbtn primary" id="nextBtn" aria-label="Next">
+      <svg width="18" height="18" viewBox="0 0 24 24"><path d="M9 4l8 8-8 8" stroke="#fff" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  var order = ['p0','p1','p2','p3','p4'];
+  var current = 0;
+  var pages = {};
+  for (var i=0;i<order.length;i++){ pages[order[i]] = document.getElementById(order[i]); }
+  var dots = document.querySelectorAll('.dot');
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+
+  function render(){
+    for (var key in pages){ pages[key].className = 'page'; }
+    pages[order[current]].className = 'page active';
+    for (var i=0;i<dots.length;i++){
+      dots[i].className = 'dot';
+      if (i < current) dots[i].className = 'dot done';
+      if (i === current) dots[i].className = 'dot active';
+    }
+    prevBtn.disabled = (current === 0);
+    nextBtn.disabled = (current === order.length - 1);
+  }
+
+  prevBtn.addEventListener('click', function(){
+    if (current > 0){ current--; render(); }
+  });
+  nextBtn.addEventListener('click', function(){
+    if (current < order.length - 1){ current++; render(); }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' && !nextBtn.disabled){ current++; render(); }
+    if (e.key === 'ArrowLeft' && !prevBtn.disabled){ current--; render(); }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
